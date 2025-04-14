@@ -37,12 +37,6 @@ def ver_tablas():
     inspector = inspect(engine)
     return {"tablas": inspector.get_table_names()}
 
-# Ruta temporal para crear las tablas (usar solo una vez)
-@fastapi_app.get("/init-db")
-def init_db():
-    Base.metadata.create_all(bind=engine)
-    return {"mensaje": "Base de datos inicializada ✅"}
-
 # Servir archivos estáticos
 fastapi_app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
