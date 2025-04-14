@@ -10,6 +10,7 @@ function DetalleSolicitud() {
   const [responsables, setResponsables] = useState([]);
   const [responsableSeleccionado, setResponsableSeleccionado] = useState("");
   const [diasSeleccionados, setDiasSeleccionados] = useState("");
+  const [fechaVencimientoVisual, setFechaVencimientoVisual] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +41,40 @@ function DetalleSolicitud() {
     }
   };
 
+  const calcularFechaVencimiento = (dias) => {
+    let fecha = new Date();
+    fecha.setDate(fecha.getDate() + 1); // comenzar desde mañana
+    let count = 0;
+
+    const feriados = [
+      new Date("2025-04-14"),
+      new Date("2025-04-15"),
+      new Date("2025-04-16"),
+      new Date("2025-04-17"),
+      new Date("2025-04-18"),
+    ];
+
+    const esFeriado = (fecha) =>
+      feriados.some(
+        (f) =>
+          f.getDate() === fecha.getDate() &&
+          f.getMonth() === fecha.getMonth() &&
+          f.getFullYear() === fecha.getFullYear()
+      );
+
+    while (count < dias) {
+      const dia = fecha.getDay();
+      if (dia !== 0 && dia !== 6 && !esFeriado(fecha)) {
+        count++;
+      }
+      if (count < dias) {
+        fecha.setDate(fecha.getDate() + 1);
+      }
+    }
+
+    setFechaVencimientoVisual(fecha.toLocaleDateString());
+  };
+
   const asignar = async () => {
     if (!responsableSeleccionado || !diasSeleccionados) {
       return alert("Selecciona un responsable y un plazo en días hábiles");
@@ -68,6 +103,10 @@ function DetalleSolicitud() {
 
   if (!solicitud) return <p className="text-gray-600">Cargando solicitud...</p>;
 
+  const fechaRadicacion = solicitud.fecha_creacion && !isNaN(Date.parse(solicitud.fecha_creacion))
+    ? new Date(solicitud.fecha_creacion)
+    : null;
+
   return (
     <div className="max-w-5xl mx-auto bg-white p-6 shadow rounded-lg border border-gray-200">
       <button
@@ -83,6 +122,12 @@ function DetalleSolicitud() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700 mb-6">
         <p><strong>Radicado:</strong> <span className="font-mono">{solicitud.radicado}</span></p>
         <p><strong>Estado:</strong> {solicitud.estado}</p>
+        <p>
+          <strong>Fecha de radicación:</strong>{" "}
+          {fechaRadicacion
+            ? `${fechaRadicacion.toLocaleDateString()} – ${fechaRadicacion.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            : "No disponible"}
+        </p>
         <p><strong>Nombre:</strong> {solicitud.nombre} {solicitud.apellido}</p>
         <p><strong>Correo:</strong> {solicitud.correo}</p>
         <p><strong>Teléfono:</strong> {solicitud.celular}</p>
@@ -125,10 +170,24 @@ function DetalleSolicitud() {
         <label className="text-sm font-medium block mb-2">Plazo en días hábiles:</label>
         <input
           type="number"
-          className="border rounded w-full px-3 py-2 text-sm mb-4"
+          className="border rounded w-full px-3 py-2 text-sm mb-2"
           placeholder="Ej: 10"
-          onChange={(e) => setDiasSeleccionados(e.target.value)}
+          onChange={(e) => {
+            const valor = e.target.value;
+            setDiasSeleccionados(valor);
+            if (valor && parseInt(valor) > 0) {
+              calcularFechaVencimiento(parseInt(valor));
+            } else {
+              setFechaVencimientoVisual("");
+            }
+          }}
         />
+        {fechaVencimientoVisual && (
+          <p className="text-sm text-gray-600 mb-4">
+            📅 Esta solicitud vencerá el:{" "}
+            <span className="font-semibold">{fechaVencimientoVisual}</span>
+          </p>
+        )}
 
         <button
           onClick={asignar}

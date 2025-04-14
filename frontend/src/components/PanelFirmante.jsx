@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Eye } from "lucide-react";
+import { Eye, ClipboardCheck, CheckCircle, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 function PanelFirmante() {
   const [solicitudes, setSolicitudes] = useState([]);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const solicitudesPorPagina = 10;
+
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
@@ -24,10 +27,54 @@ function PanelFirmante() {
     }
   };
 
+  const totalPaginas = Math.ceil(solicitudes.length / solicitudesPorPagina);
+  const inicio = (paginaActual - 1) * solicitudesPorPagina;
+  const solicitudesPaginadas = solicitudes.slice(inicio, inicio + solicitudesPorPagina);
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold text-blue-800 mb-6">📋 Solicitudes para Firmar</h2>
 
+      {/* Tarjetas resumen */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white border shadow rounded-lg p-4 flex items-center gap-4">
+          <div className="bg-blue-100 p-2 rounded-full">
+            <ClipboardCheck className="text-blue-600" size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Total Revisadas</p>
+            <p className="text-xl font-bold text-blue-800">{solicitudes.length}</p>
+          </div>
+        </div>
+
+        <div className="bg-white border shadow rounded-lg p-4 flex items-center gap-4">
+          <div className="bg-green-100 p-2 rounded-full">
+            <CheckCircle className="text-green-600" size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Firmadas hoy</p>
+            <p className="text-xl font-bold text-green-700">
+              {
+                solicitudes.filter((s) =>
+                  new Date(s.fecha_creacion).toDateString() === new Date().toDateString()
+                ).length
+              }
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white border shadow rounded-lg p-4 flex items-center gap-4">
+          <div className="bg-orange-100 p-2 rounded-full">
+            <Mail className="text-orange-600" size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Pendientes por firmar</p>
+            <p className="text-xl font-bold text-orange-700">{solicitudes.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla */}
       <div className="overflow-x-auto shadow border border-gray-200 rounded-lg">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-blue-800 text-white">
@@ -39,7 +86,7 @@ function PanelFirmante() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {solicitudes.map((s) => (
+            {solicitudesPaginadas.map((s) => (
               <tr
                 key={s.id}
                 className="hover:bg-blue-50 transition duration-150 ease-in-out"
@@ -74,6 +121,25 @@ function PanelFirmante() {
           </tbody>
         </table>
       </div>
+
+      {/* Paginación */}
+      {totalPaginas > 1 && (
+        <div className="flex justify-center mt-4 gap-2">
+          {Array.from({ length: totalPaginas }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => setPaginaActual(i + 1)}
+              className={`px-3 py-1 rounded ${
+                paginaActual === i + 1
+                  ? "bg-blue-700 text-white"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

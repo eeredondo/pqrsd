@@ -1,4 +1,3 @@
-// frontend/src/components/DetalleResponsable.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -23,6 +22,7 @@ function DetalleResponsable() {
   const [mensaje, setMensaje] = useState("");
   const [trazabilidad, setTrazabilidad] = useState([]);
   const [archivoWord, setArchivoWord] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchSolicitud = async () => {
@@ -65,11 +65,10 @@ function DetalleResponsable() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      alert("Respuesta enviada al revisor correctamente.");
       setMensaje("");
       setRespuesta("");
       setArchivoWord(null);
-      navigate("/responsable");
+      setShowModal(true);
     } catch (error) {
       console.error("Error al enviar la respuesta:", error);
       alert("Error al enviar la respuesta.");
@@ -219,6 +218,23 @@ function DetalleResponsable() {
                 </a>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ MODAL BONITO */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-xl shadow-lg max-w-sm text-center">
+            <div className="text-green-600 text-5xl mb-4">✅</div>
+            <h3 className="text-xl font-bold mb-2">¡Respuesta enviada!</h3>
+            <p className="text-gray-600 mb-6">La solicitud fue enviada al revisor correctamente.</p>
+            <button
+              onClick={() => navigate("/responsable")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-semibold"
+            >
+              Volver al panel
+            </button>
           </div>
         </div>
       )}

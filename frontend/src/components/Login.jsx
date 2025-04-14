@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeftCircle } from "lucide-react";
 
 function Login() {
   const [usuario, setUsuario] = useState("");
@@ -21,32 +22,12 @@ function Login() {
           "Content-Type": "application/x-www-form-urlencoded",
         },
       });
-      const { access_token, rol, id } = res.data;
-      console.log("🧠 Datos recibidos del backend:", res.data);
+      const { access_token, rol, id, nombre } = res.data;
 
       localStorage.setItem("token", access_token);
-      localStorage.setItem("usuario", JSON.stringify({ usuario, rol, id }));
+      localStorage.setItem("usuario", JSON.stringify({ usuario, rol, id, nombre }));
 
-      switch (rol) {
-        case "admin":
-          navigate("/admin");
-          break;
-        case "asignador":
-          navigate("/asignador");
-          break;
-        case "responsable":
-          navigate("/responsable");
-          break;
-        case "revisor":
-          navigate("/revisor");
-          break;
-        case "firmante":
-          navigate("/firmante");
-          break;
-        default:
-          navigate("/");
-          break;
-      }
+      navigate(`/${rol}`);
     } catch (err) {
       console.error(err);
       setError("Usuario o contraseña incorrectos.");
@@ -54,33 +35,51 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleLogin} className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
-        <h2 className="text-2xl font-bold text-center mb-4">Iniciar Sesión</h2>
-        <input
-          type="text"
-          placeholder="Usuario"
-          value={usuario}
-          onChange={(e) => setUsuario(e.target.value)}
-          className="border p-2 rounded w-full mb-4"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={contraseña}
-          onChange={(e) => setContraseña(e.target.value)}
-          className="border p-2 rounded w-full mb-4"
-          required
-        />
-        <button
-          type="submit"
-          className="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700"
-        >
-          Iniciar sesión
-        </button>
-        {error && <p className="text-red-500 mt-3 text-center">{error}</p>}
-      </form>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 p-4">
+      <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md">
+        <h2 className="text-3xl font-bold text-center text-blue-800 mb-6">Iniciar Sesión</h2>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Usuario"
+            value={usuario}
+            onChange={(e) => setUsuario(e.target.value)}
+            className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={contraseña}
+            onChange={(e) => setContraseña(e.target.value)}
+            className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required
+          />
+          <button
+            type="submit"
+            className="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 rounded-lg transition duration-200"
+          >
+            Iniciar sesión
+          </button>
+        </form>
+
+        {error && (
+          <p className="text-red-600 text-sm mt-4 text-center font-medium">
+            {error}
+          </p>
+        )}
+
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-blue-700 hover:underline text-sm"
+          >
+            <ArrowLeftCircle size={18} />
+            Volver al menú principal
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

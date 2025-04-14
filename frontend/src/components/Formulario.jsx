@@ -1,13 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
-const departamentosColombia = {
-  "Atlántico": ["Barranquilla", "Soledad", "Malambo", "Baranoa"],
-  "Bolívar": ["Cartagena", "Turbaco", "Arjona"],
-  "Cundinamarca": ["Bogotá", "Soacha", "Chía"],
-  "Antioquia": ["Medellín", "Bello", "Itagüí"],
-};
+import colombiaData from "../data/colombia.json";
 
 function Formulario() {
   const [form, setForm] = useState({});
@@ -16,6 +10,14 @@ function Formulario() {
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleDepartamentoChange = (e) => {
+    setForm({
+      ...form,
+      departamento: e.target.value,
+      municipio: ""
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -37,64 +39,114 @@ function Formulario() {
     }
   };
 
+  const departamentos = colombiaData.map((item) => item.departamento);
+  const municipios =
+    colombiaData.find((dep) => dep.departamento === form.departamento)
+      ?.ciudades || [];
+
   return (
-    <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-blue-100 flex items-center justify-center p-6">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-lg rounded-xl p-8 max-w-2xl w-full space-y-4 border"
+        className="bg-white shadow-2xl rounded-2xl p-10 max-w-2xl w-full space-y-5"
       >
-        <h2 className="text-2xl font-bold text-blue-800 mb-4 text-center">Radicar PQRSD</h2>
+        <h2 className="text-3xl font-extrabold text-blue-800 mb-2 text-center">Radicar PQRSD</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input name="nombre" placeholder="Nombre" required className="border p-2 rounded" onChange={handleChange} />
-          <input name="apellido" placeholder="Apellido" required className="border p-2 rounded" onChange={handleChange} />
-          <input name="correo" type="email" placeholder="Correo" required className="border p-2 rounded" onChange={handleChange} />
-          <input name="celular" placeholder="Teléfono" required className="border p-2 rounded" onChange={handleChange} />
+          <input
+            name="nombre"
+            placeholder="Nombre"
+            required
+            className="border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={handleChange}
+          />
+          <input
+            name="apellido"
+            placeholder="Apellido"
+            required
+            className="border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={handleChange}
+          />
+          <input
+            name="correo"
+            type="email"
+            placeholder="Correo"
+            required
+            className="border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={handleChange}
+          />
+          <input
+            name="celular"
+            placeholder="Teléfono"
+            required
+            className="border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={handleChange}
+          />
           <select
             name="departamento"
             required
-            className="border p-2 rounded"
-            onChange={handleChange}
+            className="border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={handleDepartamentoChange}
           >
             <option value="">Selecciona un Departamento</option>
-            {Object.keys(departamentosColombia).map((dep) => (
+            {departamentos.map((dep) => (
               <option key={dep} value={dep}>{dep}</option>
             ))}
           </select>
           <select
             name="municipio"
             required
-            className="border p-2 rounded"
+            className="border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             onChange={handleChange}
             disabled={!form.departamento}
           >
             <option value="">Selecciona un Municipio</option>
-            {form.departamento &&
-              departamentosColombia[form.departamento].map((mun) => (
-                <option key={mun} value={mun}>{mun}</option>
-              ))}
+            {municipios.map((mun) => (
+              <option key={mun} value={mun}>{mun}</option>
+            ))}
           </select>
         </div>
 
-        <input name="direccion" placeholder="Dirección" required className="w-full border p-2 rounded" onChange={handleChange} />
+        <input
+          name="direccion"
+          placeholder="Dirección"
+          required
+          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onChange={handleChange}
+        />
         <textarea
           name="mensaje"
           placeholder="Escribe tu PQRSD..."
           rows={4}
           required
-          className="w-full border p-2 rounded"
+          className="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           onChange={handleChange}
         />
-        <input
-          type="file"
-          accept="application/pdf"
-          required
-          className="w-full border p-2 rounded"
-          onChange={(e) => setArchivo(e.target.files[0])}
-        />
+        <div className="w-full">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Adjuntar archivo PDF
+          </label>
+          <input
+            type="file"
+            accept="application/pdf"
+            required
+            className="w-full border p-3 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"
+            onChange={(e) => setArchivo(e.target.files[0])}
+          />
+        </div>
 
-        <div className="text-right">
-          <button type="submit" className="bg-blue-700 text-white px-6 py-2 rounded hover:bg-blue-800 transition">
+        <div className="flex justify-between pt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="bg-blue-700 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-800 transition"
+          >
+            Volver al Menú
+          </button>
+          <button
+            type="submit"
+            className="bg-blue-700 text-white px-6 py-2 rounded-lg shadow hover:bg-blue-800 transition"
+          >
             Enviar PQRSD
           </button>
         </div>
