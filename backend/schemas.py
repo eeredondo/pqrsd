@@ -24,16 +24,16 @@ class SolicitudResponse(SolicitudBase):
     fecha_vencimiento: Optional[date]
     estado: str
     archivo: str
-    archivo_respuesta: Optional[str] = None  # ✅ Lo que faltaba
+    archivo_respuesta: Optional[str] = None
     archivo_evidencia: Optional[str] = None
     firmado: Optional[str] = None
     revision_comentario: Optional[str] = None
     asignado_a: Optional[int] = None
     archivo_respuesta_pdf: Optional[str] = None
-
+    encargado_nombre: Optional[str] = None  # 👈 Agregado
 
     class Config:
-        from_attributes = True  # Para Pydantic v2
+        from_attributes = True
 
 
 # ---------- MODELOS DE USUARIO ----------
