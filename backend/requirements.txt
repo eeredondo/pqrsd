@@ -36,3 +36,4 @@ typing_extensions==4.13.2
 uvicorn==0.34.0
 docx2pdf
 python-socketio
+psycopg2-binary
