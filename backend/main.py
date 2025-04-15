@@ -13,10 +13,13 @@ import socketio
 # FastAPI tradicional
 fastapi_app = FastAPI()
 
-# Middleware CORS
+# Middleware CORS (ahora sí con el dominio correcto de Vercel/Render)
 fastapi_app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://pqrsd-frontend.vercel.app"],
+    allow_origins=[
+        "http://localhost:5173", 
+        "https://pqrsd-frontend-y5j2.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
