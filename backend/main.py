@@ -19,7 +19,7 @@ fastapi_app.add_middleware(
     allow_origins=[
         "http://localhost:5173", 
         "https://pqrsd-frontend-y5j2.onrender.com"
-        "horizonproject.com.co"
+        "https://www.horizonproject.com.co"
     ],
     allow_credentials=True,
     allow_methods=["*"],
