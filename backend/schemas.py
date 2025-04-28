@@ -30,11 +30,10 @@ class SolicitudResponse(SolicitudBase):
     revision_comentario: Optional[str] = None
     asignado_a: Optional[int] = None
     archivo_respuesta_pdf: Optional[str] = None
-    encargado_nombre: Optional[str] = None  # 👈 Agregado
+    encargado_nombre: Optional[str] = None
 
     class Config:
         from_attributes = True
-
 
 # ---------- MODELOS DE USUARIO ----------
 
@@ -51,18 +50,31 @@ class UsuarioResponse(UsuarioBase):
     id: int
 
     class Config:
-        from_attributes = True  # ✅ Pydantic v2 compatible
+        from_attributes = True
 
 # ---------- MODELOS DE TRAZABILIDAD ----------
 
 class TrazabilidadItem(BaseModel):
     id: int
     evento: str
-    mensaje: str | None
+    mensaje: Optional[str]
     fecha: datetime
-    usuario_remitente: str | None = None
-    usuario_destinatario: str | None = None
+    usuario_remitente: Optional[str] = None
+    usuario_destinatario: Optional[str] = None
 
     class Config:
         orm_mode = True
 
+# ---------- MODELOS EXTRA PARA USUARIOS ----------
+
+class UsuarioUpdate(BaseModel):
+    nombre: str
+    correo: str
+    rol: str
+    contraseña: Optional[str] = None
+
+class ResetPasswordRequest(BaseModel):
+    nueva_contraseña: str
+
+class CambiarEstadoRequest(BaseModel):
+    activo: bool
