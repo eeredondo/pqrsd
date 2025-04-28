@@ -6,6 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect
 
+# ✅ IMPORTANTE: Crea las tablas automáticamente
+import models
+Base.metadata.create_all(bind=engine)
+
 # Socket.IO
 from utils.websocket_manager import sio
 import socketio
