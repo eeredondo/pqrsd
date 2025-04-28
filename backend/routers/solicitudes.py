@@ -175,6 +175,7 @@ async def asignar_solicitud(
     solicitud_id: int,
     usuario_id: int,
     termino_dias: int = Form(...),
+    tipo_pqrsd: str = Form(...),  # 👈 Nuevo campo tipo_pqrsd
     request: Request = None,
     db: Session = Depends(get_db)
 ):
@@ -191,19 +192,19 @@ async def asignar_solicitud(
     solicitud.asignado_a = usuario.id
     solicitud.estado = "Asignado"
     solicitud.fecha_vencimiento = fecha_limite
+    solicitud.tipo_pqrsd = tipo_pqrsd  # 👈 Guardamos el tipo que escribió el asignador
     db.commit()
 
     evento = Trazabilidad(
         solicitud_id=solicitud_id,
         evento="Asignación",
-        mensaje=f"Asignada al responsable {usuario.nombre}",
+        mensaje=f"Asignada al responsable {usuario.nombre}. Tipo de PQRSD: {tipo_pqrsd}",  # 👈 También lo dejamos registrado
         usuario_remitente=request.headers.get("usuario", "Asignador"),
         usuario_destinatario=usuario.nombre
     )
     db.add(evento)
     db.commit()
 
-    # 👇 EMIT ahora usando await porque es función async
     await sio.emit("nueva_asignacion", {
         "usuario_id": usuario_id,
         "radicado": solicitud.radicado,
@@ -212,7 +213,6 @@ async def asignar_solicitud(
     })
 
     return {"mensaje": f"Solicitud asignada correctamente. Fecha límite: {fecha_limite}"}
-
 
 @router.post("/{id}/responder")
 async def responder_solicitud(
