@@ -345,13 +345,13 @@ async def finalizar_solicitud(
     if not solicitud:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
 
-    solicitud.estado = "Para notificar"
+    solicitud.estado = "Terminado"  # 👈 Aquí corregimos
     db.commit()
 
     evento = Trazabilidad(
         solicitud_id=solicitud_id,
         evento="Finalización",
-        mensaje="La solicitud pasó a etapa final de notificación.",
+        mensaje="La solicitud fue finalizada exitosamente.",
         usuario_remitente=request.headers.get("usuario", "Administrador"),
         usuario_destinatario="Asignador"
     )
@@ -363,3 +363,4 @@ async def finalizar_solicitud(
     })
 
     return {"mensaje": "Solicitud finalizada correctamente"}
+
