@@ -61,3 +61,59 @@ from schemas import UsuarioResponse
 @router.get("/", response_model=list[UsuarioResponse])
 def obtener_usuarios(db: Session = Depends(get_db)):
     return db.query(Usuario).all()
+
+from pydantic import BaseModel
+
+class UsuarioUpdate(BaseModel):
+    nombre: str
+    correo: str
+    rol: str
+    contraseña: str | None = None
+
+class ResetPasswordRequest(BaseModel):
+    nueva_contraseña: str
+
+class CambiarEstadoRequest(BaseModel):
+    activo: bool
+
+# Actualizar usuario
+@router.put("/{usuario_id}")
+def actualizar_usuario(usuario_id: int, usuario: UsuarioUpdate, db: Session = Depends(get_db)):
+    usuario_db = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario_db:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    usuario_db.nombre = usuario.nombre
+    usuario_db.correo = usuario.correo
+    usuario_db.rol = usuario.rol
+
+    if usuario.contraseña:
+        from utils import hash_password
+        usuario_db.contraseña = hash_password(usuario.contraseña)
+
+    db.commit()
+    return {"mensaje": "Usuario actualizado correctamente"}
+
+# Resetear contraseña
+@router.put("/{usuario_id}/reset-password")
+def resetear_contraseña(usuario_id: int, datos: ResetPasswordRequest, db: Session = Depends(get_db)):
+    usuario_db = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario_db:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    from utils import hash_password
+    usuario_db.contraseña = hash_password(datos.nueva_contraseña)
+    db.commit()
+    return {"mensaje": "Contraseña reseteada correctamente"}
+
+# Cambiar estado (activar/desactivar usuario)
+@router.put("/{usuario_id}/cambiar-estado")
+def cambiar_estado(usuario_id: int, datos: CambiarEstadoRequest, db: Session = Depends(get_db)):
+    usuario_db = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario_db:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    usuario_db.activo = datos.activo
+    db.commit()
+    return {"mensaje": f"Usuario {'activado' if datos.activo else 'desactivado'} correctamente"}
+
