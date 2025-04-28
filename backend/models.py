@@ -1,4 +1,4 @@
-# models.py actualizado
+# models.py actualizado y corregido
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from database import Base
@@ -30,14 +30,14 @@ class Solicitud(Base):
     archivo_respuesta = Column(String, nullable=True)
     revision_comentario = Column(Text, nullable=True)
     firmado = Column(String, default="No")
-    archivo_evidencia = Column(String, nullable=True)  # Nuevo campo
+    archivo_evidencia = Column(String, nullable=True)
     fecha_creacion = Column(DateTime, default=datetime.utcnow)
     estado = Column(String, default="Pendiente")
     asignado_a = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
     usuario = relationship("Usuario")
     fecha_vencimiento = Column(Date, nullable=True)
     archivo_respuesta_pdf = Column(String, nullable=True)
-
+    tipo_pqrsd = Column(String, nullable=True)  # 👈 Nuevo campo agregado correctamente
 
 class Trazabilidad(Base):
     __tablename__ = "trazabilidad"
