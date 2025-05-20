@@ -134,3 +134,15 @@ def cambiar_contrasena(usuario_id: int, datos: CambioContrasenaRequest, db: Sess
     db.commit()
 
     return {"mensaje": "Contraseña actualizada correctamente"}
+
+# Eliminar usuario
+@router.delete("/{usuario_id}")
+def eliminar_usuario(usuario_id: int, db: Session = Depends(get_db)):
+    usuario_db = db.query(Usuario).filter(Usuario.id == usuario_id).first()
+    if not usuario_db:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    db.delete(usuario_db)
+    db.commit()
+    return {"mensaje": "Usuario eliminado correctamente"}
+
