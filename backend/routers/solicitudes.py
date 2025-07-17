@@ -376,22 +376,4 @@ async def recuperar_archivos(archivos: List[UploadFile] = File(...)):
 
     return {"mensaje": "Archivos restaurados correctamente", "archivos": resultados}
 
-# routers/solicitudes.py o donde manejes la subida
-
-router = APIRouter()
-
-@router.post("/subir-multiples")
-async def subir_varios_archivos(archivos: List[UploadFile] = File(...)):
-    rutas = []
-
-    for archivo in archivos:
-        filename = f"{archivo.filename}"
-        ruta = os.path.join("uploads", filename)
-
-        with open(ruta, "wb") as f:
-            shutil.copyfileobj(archivo.file, f)
-
-        rutas.append(ruta)
-
-    return {"mensaje": "Archivos subidos correctamente", "rutas": rutas}
 
