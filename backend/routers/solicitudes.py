@@ -180,22 +180,6 @@ Se adjunta el documento enviado por el ciudadano.
         "fecha_creacion": nueva_solicitud.fecha_creacion
     }
 
-# ✅ ESTE ES EL ENDPOINT QUE FALTABA
-@router.get("/{solicitud_id}", response_model=SolicitudResponse)
-def obtener_solicitud_por_id(solicitud_id: int, db: Session = Depends(get_db)):
-    solicitud = db.query(Solicitud).filter(Solicitud.id == solicitud_id).first()
-    if not solicitud:
-        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
-
-    encargado = db.query(Usuario).filter(Usuario.id == solicitud.asignado_a).first()
-    encargado_nombre = encargado.nombre if encargado else None
-
-    solicitud_dict = solicitud.__dict__.copy()
-    solicitud_dict["encargado_nombre"] = encargado_nombre
-
-    return SolicitudResponse(**solicitud_dict)
-
-
 @router.get("/asignadas/{usuario_id}", response_model=List[SolicitudResponse])
 def obtener_asignadas(usuario_id: int, db: Session = Depends(get_db)):
     return db.query(Solicitud).filter(
