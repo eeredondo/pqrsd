@@ -12,7 +12,15 @@ from pydantic import BaseModel
 import shutil, os
 from docx2pdf import convert
 from utils.websocket_manager import sio
+from supabase import create_client, Client
+from dotenv import load_dotenv
 
+# Cargar variables de entorno
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 
 
@@ -28,7 +36,6 @@ class Revision(BaseModel):
     aprobado: bool
     comentario: str | None = None
 
-
 @router.post("/", response_model=SolicitudResponse)
 async def crear_solicitud(
     nombre: str = Form(...),
@@ -42,14 +49,22 @@ async def crear_solicitud(
     archivo: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    file_location = f"uploads/{datetime.utcnow().timestamp()}_{archivo.filename}"
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(archivo.file, buffer)
+    # Leer contenido y construir nombre único
+    contenido = await archivo.read()
+    nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
 
+    # Subir a Supabase
+    supabase.storage.from_(SUPABASE_BUCKET).upload(nombre_archivo, contenido, {
+        "content-type": archivo.content_type
+    })
+    url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{nombre_archivo}"
+
+    # Generar radicado
     ano = datetime.utcnow().year
     conteo = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count() + 1
     radicado = f"RAD-{ano}-{str(conteo).zfill(5)}"
 
+    # Guardar en base de datos
     nueva_solicitud = Solicitud(
         nombre=nombre,
         apellido=apellido,
@@ -59,7 +74,7 @@ async def crear_solicitud(
         municipio=municipio,
         direccion=direccion,
         mensaje=mensaje,
-        archivo=file_location,
+        archivo=url_publica,
         radicado=radicado,
         estado="Pendiente"
     )
@@ -95,7 +110,7 @@ Atentamente,
 Equipo PQRSD
         """,
         subtype=MessageType.plain,
-        attachments=[file_location]
+        attachments=[url_publica]
     )
     await fm.send_message(mensaje_peticionario)
 
@@ -117,7 +132,7 @@ Se ha radicado una nueva solicitud:
 Se adjunta el documento enviado por el ciudadano.
             """,
             subtype=MessageType.plain,
-            attachments=[file_location]
+            attachments=[url_publica]
         )
         await fm.send_message(mensaje_asignadores)
 
