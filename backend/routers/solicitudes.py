@@ -18,9 +18,9 @@ from dotenv import load_dotenv
 # Cargar variables de entorno
 load_dotenv()
 
-SUPABASE_URL = os.getenv("https://smdxstmmjkpvvksamute.supabase.co")
-SUPABASE_KEY = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtZHhzdG1tamtwdnZrc2FtdXRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjY4MjIxMiwiZXhwIjoyMDY4MjU4MjEyfQ.v9H4FbHHEuTm7GlV6zThBYfvKXxTx7HUv-Qq69ot2dg")
-SUPABASE_BUCKET = os.getenv("archivos")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 
