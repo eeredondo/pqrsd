@@ -1,7 +1,8 @@
-# main.py actualizado con WebSockets y PostgreSQL
+# main.py completo y actualizado
+
 from fastapi import FastAPI
 from database import engine, Base
-from routers import solicitudes, usuarios
+from routers import solicitudes, usuarios, archivos  # ✅ AÑADIDO archivos
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect
@@ -19,7 +20,7 @@ import socketio
 # FastAPI tradicional
 fastapi_app = FastAPI()
 
-# Middleware CORS (ahora sí con el dominio correcto de Vercel/Render)
+# Middleware CORS
 fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -33,23 +34,24 @@ fastapi_app.add_middleware(
     allow_headers=["*"],
 )
 
-# Rutas FastAPI
+# ✅ Incluimos los routers
 fastapi_app.include_router(solicitudes.router)
 fastapi_app.include_router(usuarios.router)
+fastapi_app.include_router(archivos.router)  # ✅ AÑADIDO
 
-# Ruta principal de prueba
+# Ruta principal
 @fastapi_app.get("/")
 def inicio():
     return {"mensaje": "API funcionando correctamente 🚀"}
 
-# Ruta para ver tablas (debug)
+# Ruta de depuración (ver tablas en la base de datos)
 @fastapi_app.get("/debug/tablas")
 def ver_tablas():
     inspector = inspect(engine)
     return {"tablas": inspector.get_table_names()}
 
-# Servir archivos estáticos
+# Carpeta para archivos estáticos (si los usas)
 fastapi_app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# App principal (Socket.IO envuelve FastAPI)
+# App principal (Socket.IO + FastAPI)
 app = socketio.ASGIApp(sio, other_asgi_app=fastapi_app)
