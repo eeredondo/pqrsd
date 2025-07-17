@@ -97,3 +97,23 @@ class SolicitudResponse(SolicitudBase):
     class Config:
         from_attributes = True
 
+class SolicitudResponse(SolicitudBase):
+    id: int
+    radicado: str
+    fecha_creacion: datetime
+    fecha_vencimiento: Optional[date]
+    estado: str
+    archivo: str
+    archivo_respuesta: Optional[str] = None
+    archivo_evidencia: Optional[str] = None
+    firmado: Optional[str] = None
+    revision_comentario: Optional[str] = None
+    asignado_a: Optional[int] = None
+    archivo_respuesta_pdf: Optional[str] = None
+    tipo_pqrsd: Optional[str] = None
+
+    archivo_url: Optional[str] = None  # ✅ NUEVO
+
+    class Config:
+        from_attributes = True
+
