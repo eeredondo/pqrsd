@@ -237,22 +237,50 @@ async def responder_solicitud(
     request: Request = None,
     db: Session = Depends(get_db)
 ):
+    from utils.supabase_client import supabase
+    import tempfile
+
     solicitud = db.query(Solicitud).filter(Solicitud.id == id).first()
     if not solicitud:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
 
     if archivo:
         nombre_archivo = f"respuesta_{datetime.utcnow().timestamp()}_{archivo.filename}"
-        ruta_word = os.path.join("uploads", nombre_archivo)
-        with open(ruta_word, "wb") as buffer:
-            shutil.copyfileobj(archivo.file, buffer)
-        solicitud.archivo_respuesta = ruta_word
+        contenido_archivo = await archivo.read()
 
+        # ✅ Subir archivo original a Supabase Storage (bucket: archivos)
+        supabase.storage.from_("archivos").upload(nombre_archivo, contenido_archivo, {
+            "content-type": archivo.content_type or "application/octet-stream",
+            "upsert": True
+        })
+
+        solicitud.archivo_respuesta = nombre_archivo
+
+        # ✅ Convertir Word a PDF si aplica, y subir también a Supabase
         if archivo.filename.endswith(".docx") or archivo.filename.endswith(".doc"):
             try:
-                ruta_pdf = ruta_word.replace(".docx", ".pdf").replace(".doc", ".pdf")
-                convert(ruta_word, ruta_pdf)
-                solicitud.archivo_respuesta_pdf = ruta_pdf
+                # 1. Guardar temporalmente
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+                    tmp.write(contenido_archivo)
+                    ruta_temp_word = tmp.name
+
+                ruta_temp_pdf = ruta_temp_word.replace(".docx", ".pdf").replace(".doc", ".pdf")
+                convert(ruta_temp_word, ruta_temp_pdf)
+
+                # 2. Leer PDF convertido
+                with open(ruta_temp_pdf, "rb") as f:
+                    contenido_pdf = f.read()
+
+                nombre_pdf = nombre_archivo.replace(".docx", ".pdf").replace(".doc", ".pdf")
+
+                # 3. Subir PDF convertido
+                supabase.storage.from_("archivos").upload(nombre_pdf, contenido_pdf, {
+                    "content-type": "application/pdf",
+                    "upsert": True
+                })
+
+                solicitud.archivo_respuesta_pdf = nombre_pdf
+
             except Exception as e:
                 print("❌ Error al convertir Word a PDF:", e)
 
@@ -276,7 +304,6 @@ async def responder_solicitud(
     })
 
     return {"mensaje": "Respuesta enviada correctamente"}
-
 
 from fastapi import Body
 
