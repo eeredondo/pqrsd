@@ -5,6 +5,8 @@ from routers import solicitudes, usuarios
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect
+from dotenv import load_dotenv
+load_dotenv()
 
 # ✅ IMPORTANTE: Crea las tablas automáticamente
 import models
