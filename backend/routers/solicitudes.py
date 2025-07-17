@@ -16,14 +16,22 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 import os
 
-# Cargar variables de entorno
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
 
-# ✅ Crear cliente Supabase
+# DEBUG: Imprimir para verificar
+print("✅ SUPABASE_URL:", SUPABASE_URL)
+print("✅ SUPABASE_KEY:", SUPABASE_KEY[:10], "...")
+print("✅ SUPABASE_BUCKET:", SUPABASE_BUCKET)
+
+# Verificar que las variables estén bien cargadas
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise RuntimeError("❌ SUPABASE_URL o SUPABASE_KEY no están definidos. Revisa variables de entorno en Render.")
+
+# Crear cliente Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
