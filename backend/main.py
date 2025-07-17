@@ -33,6 +33,8 @@ fastapi_app.add_middleware(
         "https://pqrsd-frontend-y5j2.onrender.com",
         "https://www.horizonproject.com.co",
         "https://horizonproject.com.co"
+        "http://127.0.0.1:5500"  # 🟢 ESTA LÍNEA ES CLAVE PARA TU subir.html
+
     ],
     allow_credentials=True,
     allow_methods=["*"],
