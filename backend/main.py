@@ -7,7 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect
 from dotenv import load_dotenv
+import os  # ✅ NUEVO: necesario para crear carpeta
+
 load_dotenv()
+
+# ✅ Crear la carpeta "uploads" si no existe
+os.makedirs("uploads", exist_ok=True)
 
 # ✅ IMPORTANTE: Crea las tablas automáticamente
 import models
@@ -50,7 +55,7 @@ def ver_tablas():
     inspector = inspect(engine)
     return {"tablas": inspector.get_table_names()}
 
-# Carpeta para archivos estáticos (si los usas)
+# Carpeta para archivos estáticos (para servir PDFs u otros)
 fastapi_app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # App principal (Socket.IO + FastAPI)
