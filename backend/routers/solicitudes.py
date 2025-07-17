@@ -431,16 +431,17 @@ def obtener_solicitud_por_id(solicitud_id: int, db: Session = Depends(get_db)):
     encargado = db.query(Usuario).filter(Usuario.id == solicitud.asignado_a).first()
     encargado_nombre = encargado.nombre if encargado else None
 
-    # ✅ Construir URL pública del archivo (si existe)
+    # ✅ LIMPIAR LA RUTA SI INCLUYE "uploads/"
     archivo_url = None
     if solicitud.archivo:
         supabase_url = "https://smdxstmmjkpvvksamute.supabase.co"
         bucket = "archivos"
-        archivo_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{solicitud.archivo}"
+        archivo_path = solicitud.archivo.replace("uploads/", "")  # 👈 ESTA ES LA CLAVE
+        archivo_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{archivo_path}"
 
     solicitud_dict = solicitud.__dict__.copy()
     solicitud_dict["encargado_nombre"] = encargado_nombre
-    solicitud_dict["archivo_url"] = archivo_url  # 👈 Agregamos la URL pública
+    solicitud_dict["archivo_url"] = archivo_url
 
     return SolicitudResponse(**solicitud_dict)
 
