@@ -4,7 +4,6 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
 from database import get_db
 from models import ArchivoPQR
-from email_utils import enviar_pdf_por_correo
 
 router = APIRouter(prefix="/archivos", tags=["Archivos"])
 
