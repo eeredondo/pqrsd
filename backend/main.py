@@ -32,7 +32,7 @@ fastapi_app.add_middleware(
         "http://localhost:5173", 
         "https://pqrsd-frontend-y5j2.onrender.com",
         "https://www.horizonproject.com.co",
-        "https://horizonproject.com.co"
+        "https://horizonproject.com.co",
         "http://127.0.0.1:5500"  # 🟢 ESTA LÍNEA ES CLAVE PARA TU subir.html
 
     ],
