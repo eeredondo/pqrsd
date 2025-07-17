@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import shutil, os
 from docx2pdf import convert
 from utils.websocket_manager import sio
+from utils.supabase_client import supabase
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 
@@ -42,10 +43,19 @@ async def crear_solicitud(
     archivo: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    file_location = os.path.join("uploads", f"{datetime.utcnow().timestamp()}_{archivo.filename}")
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(archivo.file, buffer)
+    # ✅ Subir archivo a Supabase Storage
+    nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
+    contenido = await archivo.read()
 
+    supabase.storage.from_("archivos-pqrsd").upload(nombre_archivo, contenido, {
+        "content-type": "application/pdf",
+        "upsert": True
+    })
+
+    # ✅ Guardar el nombre en la base de datos
+    file_location = nombre_archivo
+
+    # ✅ Generar radicado
     ano = datetime.utcnow().year
     conteo = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count() + 1
     radicado = f"RAD-{ano}-{str(conteo).zfill(5)}"
@@ -67,6 +77,7 @@ async def crear_solicitud(
     db.commit()
     db.refresh(nueva_solicitud)
 
+    # ✅ Guardar trazabilidad
     evento = Trazabilidad(
         solicitud_id=nueva_solicitud.id,
         evento="Radicación",
@@ -76,6 +87,9 @@ async def crear_solicitud(
     )
     db.add(evento)
     db.commit()
+
+    # ✅ Enviar correos con archivo como adjunto real
+    contenido_pdf = supabase.storage.from_("archivos-pqrsd").download(file_location)
 
     fm = FastMail(conf)
 
@@ -95,7 +109,7 @@ Atentamente,
 Equipo PQRSD
         """,
         subtype=MessageType.plain,
-        attachments=[file_location]
+        attachments=[(file_location, contenido_pdf)]
     )
     await fm.send_message(mensaje_peticionario)
 
@@ -117,10 +131,11 @@ Se ha radicado una nueva solicitud:
 Se adjunta el documento enviado por el ciudadano.
             """,
             subtype=MessageType.plain,
-            attachments=[file_location]
+            attachments=[(file_location, contenido_pdf)]
         )
         await fm.send_message(mensaje_asignadores)
 
+    # ✅ Emitir notificación por WebSocket
     await sio.emit("nueva_solicitud", {
         "radicado": radicado,
         "nombre": nombre,
@@ -128,7 +143,6 @@ Se adjunta el documento enviado por el ciudadano.
     })
 
     return nueva_solicitud
-
 
 @router.get("/", response_model=List[SolicitudResponse])
 def obtener_solicitudes(db: Session = Depends(get_db)):
