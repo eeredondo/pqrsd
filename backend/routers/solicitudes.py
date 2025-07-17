@@ -46,7 +46,7 @@ async def crear_solicitud(
     from utils.supabase_client import supabase
     from fastapi_mail import FastMail, MessageSchema, MessageType
 
-    # ✅ Subir archivo a Supabase Storage (bucket: "archivos")
+    # ✅ Subir archivo a Supabase Storage
     nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
     contenido = await archivo.read()
 
@@ -56,10 +56,8 @@ async def crear_solicitud(
         file_options={"content-type": "application/pdf"},
     )
 
-    # ✅ Guardar el nombre del archivo (no la ruta local)
     file_location = nombre_archivo
 
-    # ✅ Generar número de radicado
     ano = datetime.utcnow().year
     conteo = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count() + 1
     radicado = f"RAD-{ano}-{str(conteo).zfill(5)}"
@@ -81,7 +79,6 @@ async def crear_solicitud(
     db.commit()
     db.refresh(nueva_solicitud)
 
-    # ✅ Guardar trazabilidad
     evento = Trazabilidad(
         solicitud_id=nueva_solicitud.id,
         evento="Radicación",
@@ -92,15 +89,14 @@ async def crear_solicitud(
     db.add(evento)
     db.commit()
 
-    # ✅ Descargar archivo desde Supabase para enviarlo por correo como adjunto real
     contenido_pdf = supabase.storage.from_("archivos").download(file_location)
 
     fm = FastMail(conf)
 
-   mensaje_peticionario = MessageSchema(
-    subject=f"Radicado PQRSD: {radicado}",
-    recipients=[correo],
-    body=f"""
+    mensaje_peticionario = MessageSchema(
+        subject=f"Radicado PQRSD: {radicado}",
+        recipients=[correo],
+        body=f"""
 Hola {nombre} {apellido},
 
 Tu solicitud ha sido radicada correctamente con número de radicado: {radicado}.
@@ -111,24 +107,24 @@ Gracias por usar nuestro sistema PQRSD.
 
 Atentamente,
 Equipo PQRSD
-    """,
-    subtype=MessageType.plain,
-    attachments=[{
-        "file": contenido_pdf,
-        "filename": "comprobante.pdf",
-        "mime_type": "application/pdf"
-    }]
-)
+        """,
+        subtype=MessageType.plain,
+        attachments=[{
+            "file": contenido_pdf,
+            "filename": "comprobante.pdf",
+            "mime_type": "application/pdf"
+        }]
+    )
     await fm.send_message(mensaje_peticionario)
 
     asignadores = db.query(Usuario).filter(Usuario.rol == "asignador").all()
     correos_asignadores = [a.correo for a in asignadores]
 
     if correos_asignadores:
-       mensaje_asignadores = MessageSchema(
-    subject="Nueva PQRSD radicada",
-    recipients=correos_asignadores,
-    body=f"""
+        mensaje_asignadores = MessageSchema(
+            subject="Nueva PQRSD radicada",
+            recipients=correos_asignadores,
+            body=f"""
 Se ha radicado una nueva solicitud:
 
 📌 Radicado: {radicado}
@@ -137,17 +133,16 @@ Se ha radicado una nueva solicitud:
 🌆 Municipio: {municipio}
 
 Se adjunta el documento enviado por el ciudadano.
-    """,
-    subtype=MessageType.plain,
-    attachments=[{
-        "file": contenido_pdf,
-        "filename": "comprobante.pdf",
-        "mime_type": "application/pdf"
-    }]
-)
+            """,
+            subtype=MessageType.plain,
+            attachments=[{
+                "file": contenido_pdf,
+                "filename": "comprobante.pdf",
+                "mime_type": "application/pdf"
+            }]
+        )
         await fm.send_message(mensaje_asignadores)
 
-    # ✅ Emitir notificación por WebSocket
     await sio.emit("nueva_solicitud", {
         "radicado": radicado,
         "nombre": nombre,
@@ -155,6 +150,7 @@ Se adjunta el documento enviado por el ciudadano.
     })
 
     return nueva_solicitud
+
 
 
 # ✅ ESTE ES EL ENDPOINT QUE FALTABA
