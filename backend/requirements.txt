@@ -37,3 +37,5 @@ uvicorn==0.34.0
 docx2pdf
 python-socketio
 psycopg2-binary
+supabase
+python-dotenv
