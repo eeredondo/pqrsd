@@ -1,9 +1,9 @@
 # models.py actualizado y corregido
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Date, LargeBinary, func
 from sqlalchemy.orm import relationship
 from database import Base
 from datetime import datetime
-from sqlalchemy import Date
 
 class Usuario(Base):
     __tablename__ = "usuarios"
@@ -49,3 +49,12 @@ class Trazabilidad(Base):
     fecha = Column(DateTime, default=datetime.utcnow)
     usuario_remitente = Column(String)  # quien ejecuta la acción
     usuario_destinatario = Column(String, nullable=True)  # a quién va dirigida
+
+# ✅ NUEVO MODELO PARA GUARDAR PDF EN LA BASE DE DATOS
+class ArchivoPQR(Base):
+    __tablename__ = "archivos_pqrsd"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+    contenido = Column(LargeBinary, nullable=False)
+    creado_en = Column(DateTime(timezone=True), server_default=func.now())
