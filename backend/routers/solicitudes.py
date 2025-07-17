@@ -93,17 +93,17 @@ async def crear_solicitud(
     db.add(evento)
     db.commit()
 
-    # ✅ Descargar archivo desde Supabase
+    # ✅ Descargar archivo desde Supabase para adjuntar
     contenido_pdf = supabase.storage.from_("archivos").download(file_location)
 
-    # ✅ Guardar archivo temporal en /tmp para usarlo como adjunto
+    # ✅ Guardar archivo temporal
     ruta_temporal = os.path.join(tempfile.gettempdir(), "comprobante.pdf")
     with open(ruta_temporal, "wb") as f:
         f.write(contenido_pdf)
 
     fm = FastMail(conf)
 
-    # ✅ Enviar al ciudadano
+    # ✅ Enviar correo al ciudadano
     mensaje_peticionario = MessageSchema(
         subject=f"Radicado PQRSD: {radicado}",
         recipients=[correo],
@@ -124,7 +124,7 @@ Equipo PQRSD
     )
     await fm.send_message(mensaje_peticionario)
 
-    # ✅ Enviar a asignadores
+    # ✅ Enviar correo a asignadores
     asignadores = db.query(Usuario).filter(Usuario.rol == "asignador").all()
     correos_asignadores = [a.correo for a in asignadores]
 
@@ -147,17 +147,38 @@ Se adjunta el documento enviado por el ciudadano.
         )
         await fm.send_message(mensaje_asignadores)
 
-    # ✅ Notificar frontend
+    # ✅ Notificar al frontend
     await sio.emit("nueva_solicitud", {
         "radicado": radicado,
         "nombre": nombre,
         "apellido": apellido
     })
 
-    # ✅ Opcional: limpiar archivo temporal
+    # ✅ Limpiar temporal
     os.remove(ruta_temporal)
 
-    return nueva_solicitud
+    # ✅ Construir URL pública del PDF desde Supabase
+    supabase_url = "https://smdxstmmjkpvvksamute.supabase.co"
+    bucket = "archivos"
+    archivo_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{file_location}"
+
+    # ✅ Devolver datos completos con URL pública
+    return {
+        "id": nueva_solicitud.id,
+        "radicado": nueva_solicitud.radicado,
+        "nombre": nueva_solicitud.nombre,
+        "apellido": nueva_solicitud.apellido,
+        "correo": nueva_solicitud.correo,
+        "celular": nueva_solicitud.celular,
+        "departamento": nueva_solicitud.departamento,
+        "municipio": nueva_solicitud.municipio,
+        "direccion": nueva_solicitud.direccion,
+        "mensaje": nueva_solicitud.mensaje,
+        "estado": nueva_solicitud.estado,
+        "archivo": nueva_solicitud.archivo,
+        "archivo_url": archivo_url,
+        "fecha_creacion": nueva_solicitud.fecha_creacion
+    }
 
 # ✅ ESTE ES EL ENDPOINT QUE FALTABA
 @router.get("/{solicitud_id}", response_model=SolicitudResponse)
@@ -418,5 +439,27 @@ async def recuperar_archivos(archivos: List[UploadFile] = File(...)):
 @router.get("/", response_model=List[SolicitudResponse])
 def listar_solicitudes(db: Session = Depends(get_db)):
     return db.query(Solicitud).all()
+
+@router.get("/{solicitud_id}", response_model=SolicitudResponse)
+def obtener_solicitud_por_id(solicitud_id: int, db: Session = Depends(get_db)):
+    solicitud = db.query(Solicitud).filter(Solicitud.id == solicitud_id).first()
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+
+    encargado = db.query(Usuario).filter(Usuario.id == solicitud.asignado_a).first()
+    encargado_nombre = encargado.nombre if encargado else None
+
+    # ✅ Construir URL pública del archivo (si existe)
+    archivo_url = None
+    if solicitud.archivo:
+        supabase_url = "https://smdxstmmjkpvvksamute.supabase.co"
+        bucket = "archivos"
+        archivo_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{solicitud.archivo}"
+
+    solicitud_dict = solicitud.__dict__.copy()
+    solicitud_dict["encargado_nombre"] = encargado_nombre
+    solicitud_dict["archivo_url"] = archivo_url  # 👈 Agregamos la URL pública
+
+    return SolicitudResponse(**solicitud_dict)
 
 
