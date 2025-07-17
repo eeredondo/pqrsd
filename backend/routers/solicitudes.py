@@ -42,7 +42,7 @@ async def crear_solicitud(
     archivo: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    file_location = f"uploads/{datetime.utcnow().timestamp()}_{archivo.filename}"
+    file_location = f"/uploads/{datetime.utcnow().timestamp()}_{archivo.filename}"
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(archivo.file, buffer)
 
