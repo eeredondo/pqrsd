@@ -54,7 +54,6 @@ async def crear_solicitud(
         path=nombre_archivo,
         file=contenido,
         file_options={"content-type": "application/pdf"},
-        upsert=True
     )
 
     # ✅ Guardar el nombre del archivo (no la ruta local)
