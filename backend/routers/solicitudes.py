@@ -47,13 +47,13 @@ async def crear_solicitud(
     nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
     contenido = await archivo.read()
 
-    supabase.storage.from_("archivos").upload(
-    nombre_archivo,
-    contenido,
-    file_options={"content-type": "application/pdf"},
-    upsert=True
+      supabase.storage.from_("archivos").upload(
+        path=nombre_archivo,
+        file=contenido,
+        file_options={"content-type": "application/pdf"},
+        upsert=True
 )
-    })
+
 
     # ✅ Guardar el nombre en la base de datos
     file_location = nombre_archivo
