@@ -2,10 +2,8 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
 from sqlalchemy.orm import Session
 from fastapi.responses import StreamingResponse
 import io
-
 from database import get_db
 from models import ArchivoPQR
-from utils.mailer import enviar_pdf_por_correo  # Asegúrate de tener esta utilidad
 
 router = APIRouter(prefix="/archivos", tags=["Archivos"])
 
