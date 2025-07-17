@@ -43,22 +43,24 @@ async def crear_solicitud(
     archivo: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    # ✅ Subir archivo a Supabase Storage
+    from utils.supabase_client import supabase
+    from fastapi_mail import FastMail, MessageSchema, MessageType
+
+    # ✅ Subir archivo a Supabase Storage (bucket: "archivos")
     nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
     contenido = await archivo.read()
 
-      supabase.storage.from_("archivos").upload(
+    supabase.storage.from_("archivos").upload(
         path=nombre_archivo,
         file=contenido,
         file_options={"content-type": "application/pdf"},
         upsert=True
-)
+    )
 
-
-    # ✅ Guardar el nombre en la base de datos
+    # ✅ Guardar el nombre del archivo (no la ruta local)
     file_location = nombre_archivo
 
-    # ✅ Generar radicado
+    # ✅ Generar número de radicado
     ano = datetime.utcnow().year
     conteo = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count() + 1
     radicado = f"RAD-{ano}-{str(conteo).zfill(5)}"
@@ -91,8 +93,8 @@ async def crear_solicitud(
     db.add(evento)
     db.commit()
 
-    # ✅ Enviar correos con archivo como adjunto real
-    contenido_pdf = supabase.storage.from_("archivos-pqrsd").download(file_location)
+    # ✅ Descargar archivo desde Supabase para enviarlo por correo como adjunto real
+    contenido_pdf = supabase.storage.from_("archivos").download(file_location)
 
     fm = FastMail(conf)
 
@@ -146,22 +148,6 @@ Se adjunta el documento enviado por el ciudadano.
     })
 
     return nueva_solicitud
-
-@router.get("/", response_model=List[SolicitudResponse])
-def obtener_solicitudes(db: Session = Depends(get_db)):
-    solicitudes = db.query(Solicitud).all()
-    resultado = []
-
-    for s in solicitudes:
-        encargado = db.query(Usuario).filter(Usuario.id == s.asignado_a).first()
-        encargado_nombre = encargado.nombre if encargado else None
-
-        solicitud_dict = s.__dict__.copy()
-        solicitud_dict["encargado_nombre"] = encargado_nombre
-
-        resultado.append(SolicitudResponse(**solicitud_dict))
-
-    return resultado
 
 
 # ✅ ESTE ES EL ENDPOINT QUE FALTABA
