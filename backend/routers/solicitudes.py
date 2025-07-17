@@ -364,10 +364,14 @@ async def finalizar_solicitud(
 
     return {"mensaje": "Solicitud finalizada correctamente"}
 
-@router.post("/solicitudes/recuperar-archivo")
-async def recuperar_archivo(archivo: UploadFile = File(...)):
-    import os, shutil
-    ruta = os.path.join("uploads", archivo.filename)
-    with open(ruta, "wb") as buffer:
-        shutil.copyfileobj(archivo.file, buffer)
-    return {"mensaje": f"Archivo {archivo.filename} restaurado correctamente"}
+@router.post("/solicitudes/recuperar-archivos")
+async def recuperar_archivos(archivos: List[UploadFile] = File(...)):
+    resultados = []
+
+    for archivo in archivos:
+        ruta = os.path.join("uploads", archivo.filename)
+        with open(ruta, "wb") as buffer:
+            shutil.copyfileobj(archivo.file, buffer)
+        resultados.append(f"{archivo.filename} restaurado")
+
+    return {"mensaje": "Archivos restaurados correctamente", "archivos": resultados}
