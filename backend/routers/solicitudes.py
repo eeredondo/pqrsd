@@ -114,16 +114,18 @@ Hola {nombre} {apellido},
 
 Tu solicitud ha sido radicada correctamente con número de radicado: {radicado}.
 
+📎 Puedes ver el documento que enviaste aquí: {url_publica}
+
 Nos comunicaremos contigo tan pronto como sea revisada.
 
 Gracias por usar nuestro sistema PQRSD.
 
 Atentamente,
 Equipo PQRSD
-        """,
-        subtype=MessageType.plain,
-        attachments=[url_publica]
-    )
+    """,
+    subtype=MessageType.plain,
+)
+
     await fm.send_message(mensaje_peticionario)
 
     asignadores = db.query(Usuario).filter(Usuario.rol == "asignador").all()
@@ -131,9 +133,9 @@ Equipo PQRSD
 
     if correos_asignadores:
         mensaje_asignadores = MessageSchema(
-            subject="Nueva PQRSD radicada",
-            recipients=correos_asignadores,
-            body=f"""
+    subject="Nueva PQRSD radicada",
+    recipients=correos_asignadores,
+    body=f"""
 Se ha radicado una nueva solicitud:
 
 📌 Radicado: {radicado}
@@ -141,11 +143,11 @@ Se ha radicado una nueva solicitud:
 📍 Departamento: {departamento}
 🌆 Municipio: {municipio}
 
-Se adjunta el documento enviado por el ciudadano.
-            """,
-            subtype=MessageType.plain,
-            attachments=[url_publica]
-        )
+📎 Documento enviado por el ciudadano: {url_publica}
+    """,
+    subtype=MessageType.plain
+)
+
         await fm.send_message(mensaje_asignadores)
 
     await sio.emit("nueva_solicitud", {
