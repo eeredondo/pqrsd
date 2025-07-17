@@ -14,6 +14,7 @@ from docx2pdf import convert
 from utils.websocket_manager import sio
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import os
 
 # Cargar variables de entorno
 load_dotenv()
@@ -21,6 +22,9 @@ load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
+
+# ✅ Crear cliente Supabase
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 
