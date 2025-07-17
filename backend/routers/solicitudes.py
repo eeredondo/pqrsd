@@ -12,29 +12,9 @@ from pydantic import BaseModel
 import shutil, os
 from docx2pdf import convert
 from utils.websocket_manager import sio
-from supabase import create_client, Client
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET")
-
-# DEBUG: Imprimir para verificar
-print("✅ SUPABASE_URL:", SUPABASE_URL)
-print("✅ SUPABASE_KEY:", SUPABASE_KEY[:10], "...")
-print("✅ SUPABASE_BUCKET:", SUPABASE_BUCKET)
-
-# Verificar que las variables estén bien cargadas
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("❌ SUPABASE_URL o SUPABASE_KEY no están definidos. Revisa variables de entorno en Render.")
-
-# Crear cliente Supabase
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
+
 
 def get_db():
     db = SessionLocal()
@@ -47,6 +27,7 @@ def get_db():
 class Revision(BaseModel):
     aprobado: bool
     comentario: str | None = None
+
 
 @router.post("/", response_model=SolicitudResponse)
 async def crear_solicitud(
@@ -61,22 +42,14 @@ async def crear_solicitud(
     archivo: UploadFile = File(...),
     db: Session = Depends(get_db)
 ):
-    # Leer contenido y construir nombre único
-    contenido = await archivo.read()
-    nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
+    file_location = f"uploads/{datetime.utcnow().timestamp()}_{archivo.filename}"
+    with open(file_location, "wb") as buffer:
+        shutil.copyfileobj(archivo.file, buffer)
 
-    # Subir a Supabase
-    supabase.storage.from_(SUPABASE_BUCKET).upload(nombre_archivo, contenido, {
-        "content-type": archivo.content_type
-    })
-    url_publica = f"{SUPABASE_URL}/storage/v1/object/public/{SUPABASE_BUCKET}/{nombre_archivo}"
-
-    # Generar radicado
     ano = datetime.utcnow().year
     conteo = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count() + 1
     radicado = f"RAD-{ano}-{str(conteo).zfill(5)}"
 
-    # Guardar en base de datos
     nueva_solicitud = Solicitud(
         nombre=nombre,
         apellido=apellido,
@@ -86,7 +59,7 @@ async def crear_solicitud(
         municipio=municipio,
         direccion=direccion,
         mensaje=mensaje,
-        archivo=url_publica,
+        archivo=file_location,
         radicado=radicado,
         estado="Pendiente"
     )
@@ -114,18 +87,16 @@ Hola {nombre} {apellido},
 
 Tu solicitud ha sido radicada correctamente con número de radicado: {radicado}.
 
-📎 Puedes ver el documento que enviaste aquí: {url_publica}
-
 Nos comunicaremos contigo tan pronto como sea revisada.
 
 Gracias por usar nuestro sistema PQRSD.
 
 Atentamente,
 Equipo PQRSD
-    """,
-    subtype=MessageType.plain,
-)
-
+        """,
+        subtype=MessageType.plain,
+        attachments=[file_location]
+    )
     await fm.send_message(mensaje_peticionario)
 
     asignadores = db.query(Usuario).filter(Usuario.rol == "asignador").all()
@@ -133,9 +104,9 @@ Equipo PQRSD
 
     if correos_asignadores:
         mensaje_asignadores = MessageSchema(
-    subject="Nueva PQRSD radicada",
-    recipients=correos_asignadores,
-    body=f"""
+            subject="Nueva PQRSD radicada",
+            recipients=correos_asignadores,
+            body=f"""
 Se ha radicado una nueva solicitud:
 
 📌 Radicado: {radicado}
@@ -143,11 +114,11 @@ Se ha radicado una nueva solicitud:
 📍 Departamento: {departamento}
 🌆 Municipio: {municipio}
 
-📎 Documento enviado por el ciudadano: {url_publica}
-    """,
-    subtype=MessageType.plain
-)
-
+Se adjunta el documento enviado por el ciudadano.
+            """,
+            subtype=MessageType.plain,
+            attachments=[file_location]
+        )
         await fm.send_message(mensaje_asignadores)
 
     await sio.emit("nueva_solicitud", {
@@ -392,4 +363,3 @@ async def finalizar_solicitud(
     })
 
     return {"mensaje": "Solicitud finalizada correctamente"}
-
