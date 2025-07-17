@@ -97,10 +97,10 @@ async def crear_solicitud(
 
     fm = FastMail(conf)
 
-    mensaje_peticionario = MessageSchema(
-        subject=f"Radicado PQRSD: {radicado}",
-        recipients=[correo],
-        body=f"""
+   mensaje_peticionario = MessageSchema(
+    subject=f"Radicado PQRSD: {radicado}",
+    recipients=[correo],
+    body=f"""
 Hola {nombre} {apellido},
 
 Tu solicitud ha sido radicada correctamente con número de radicado: {radicado}.
@@ -111,20 +111,24 @@ Gracias por usar nuestro sistema PQRSD.
 
 Atentamente,
 Equipo PQRSD
-        """,
-        subtype=MessageType.plain,
-        attachments=[(file_location, contenido_pdf)]
-    )
+    """,
+    subtype=MessageType.plain,
+    attachments=[{
+        "file": contenido_pdf,
+        "filename": "comprobante.pdf",
+        "mime_type": "application/pdf"
+    }]
+)
     await fm.send_message(mensaje_peticionario)
 
     asignadores = db.query(Usuario).filter(Usuario.rol == "asignador").all()
     correos_asignadores = [a.correo for a in asignadores]
 
     if correos_asignadores:
-        mensaje_asignadores = MessageSchema(
-            subject="Nueva PQRSD radicada",
-            recipients=correos_asignadores,
-            body=f"""
+       mensaje_asignadores = MessageSchema(
+    subject="Nueva PQRSD radicada",
+    recipients=correos_asignadores,
+    body=f"""
 Se ha radicado una nueva solicitud:
 
 📌 Radicado: {radicado}
@@ -133,10 +137,14 @@ Se ha radicado una nueva solicitud:
 🌆 Municipio: {municipio}
 
 Se adjunta el documento enviado por el ciudadano.
-            """,
-            subtype=MessageType.plain,
-            attachments=[(file_location, contenido_pdf)]
-        )
+    """,
+    subtype=MessageType.plain,
+    attachments=[{
+        "file": contenido_pdf,
+        "filename": "comprobante.pdf",
+        "mime_type": "application/pdf"
+    }]
+)
         await fm.send_message(mensaje_asignadores)
 
     # ✅ Emitir notificación por WebSocket
