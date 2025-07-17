@@ -415,4 +415,8 @@ async def recuperar_archivos(archivos: List[UploadFile] = File(...)):
 
     return {"mensaje": "Archivos restaurados correctamente", "archivos": resultados}
 
+@router.get("/", response_model=List[SolicitudResponse])
+def listar_solicitudes(db: Session = Depends(get_db)):
+    return db.query(Solicitud).all()
+
 
