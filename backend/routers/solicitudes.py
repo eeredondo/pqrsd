@@ -45,8 +45,9 @@ async def crear_solicitud(
 ):
     from utils.supabase_client import supabase
     from fastapi_mail import FastMail, MessageSchema, MessageType
+    import tempfile, os
 
-    # ✅ Subir archivo a Supabase Storage
+    # ✅ Subir archivo a Supabase
     nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
     contenido = await archivo.read()
 
@@ -58,10 +59,12 @@ async def crear_solicitud(
 
     file_location = nombre_archivo
 
+    # ✅ Crear radicado
     ano = datetime.utcnow().year
     conteo = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count() + 1
     radicado = f"RAD-{ano}-{str(conteo).zfill(5)}"
 
+    # ✅ Guardar en DB
     nueva_solicitud = Solicitud(
         nombre=nombre,
         apellido=apellido,
@@ -79,6 +82,7 @@ async def crear_solicitud(
     db.commit()
     db.refresh(nueva_solicitud)
 
+    # ✅ Trazabilidad
     evento = Trazabilidad(
         solicitud_id=nueva_solicitud.id,
         evento="Radicación",
@@ -89,10 +93,17 @@ async def crear_solicitud(
     db.add(evento)
     db.commit()
 
+    # ✅ Descargar archivo desde Supabase
     contenido_pdf = supabase.storage.from_("archivos").download(file_location)
+
+    # ✅ Guardar archivo temporal en /tmp para usarlo como adjunto
+    ruta_temporal = os.path.join(tempfile.gettempdir(), "comprobante.pdf")
+    with open(ruta_temporal, "wb") as f:
+        f.write(contenido_pdf)
 
     fm = FastMail(conf)
 
+    # ✅ Enviar al ciudadano
     mensaje_peticionario = MessageSchema(
         subject=f"Radicado PQRSD: {radicado}",
         recipients=[correo],
@@ -109,14 +120,11 @@ Atentamente,
 Equipo PQRSD
         """,
         subtype=MessageType.plain,
-        attachments=[{
-            "file": contenido_pdf,
-            "filename": "comprobante.pdf",
-            "mime_type": "application/pdf"
-        }]
+        attachments=[ruta_temporal]
     )
     await fm.send_message(mensaje_peticionario)
 
+    # ✅ Enviar a asignadores
     asignadores = db.query(Usuario).filter(Usuario.rol == "asignador").all()
     correos_asignadores = [a.correo for a in asignadores]
 
@@ -135,23 +143,21 @@ Se ha radicado una nueva solicitud:
 Se adjunta el documento enviado por el ciudadano.
             """,
             subtype=MessageType.plain,
-            attachments=[{
-                "file": contenido_pdf,
-                "filename": "comprobante.pdf",
-                "mime_type": "application/pdf"
-            }]
+            attachments=[ruta_temporal]
         )
         await fm.send_message(mensaje_asignadores)
 
+    # ✅ Notificar frontend
     await sio.emit("nueva_solicitud", {
         "radicado": radicado,
         "nombre": nombre,
         "apellido": apellido
     })
 
+    # ✅ Opcional: limpiar archivo temporal
+    os.remove(ruta_temporal)
+
     return nueva_solicitud
-
-
 
 # ✅ ESTE ES EL ENDPOINT QUE FALTABA
 @router.get("/{solicitud_id}", response_model=SolicitudResponse)
