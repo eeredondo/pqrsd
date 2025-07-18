@@ -13,7 +13,7 @@ import shutil, os
 from docx2pdf import convert
 from utils.websocket_manager import sio
 from utils.supabase_client import supabase
-from auth import get_current_user
+from auth import obtener_usuario_actual
 from schemas import ReasignarEncargadoRequest
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
@@ -461,7 +461,7 @@ def reasignar_encargado(
     solicitud_id: int,
     datos: ReasignarEncargadoRequest,
     db: Session = Depends(get_db),
-    user=Depends(get_current_user)
+    user: Usuario = Depends(obtener_usuario_actual)
 ):
     solicitud = db.query(Solicitud).filter(Solicitud.id == solicitud_id).first()
     if not solicitud:
