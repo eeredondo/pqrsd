@@ -1,4 +1,3 @@
-# auth.py
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from schemas import UsuarioResponse
@@ -14,7 +13,7 @@ SECRET_KEY = "secretoparapruebas123456789"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # Token válido por 1 día
 
-# ✅ Corregido: sin slash inicial
+# ✅ Correcto: sin slash inicial
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="usuarios/login")
 
 # Crear token JWT
@@ -46,8 +45,8 @@ def get_db():
     finally:
         db.close()
 
-# Obtener usuario actual a partir del token
-def obtener_usuario_actual(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+# ✅ Renombrada: esta es la que usarás con Depends(get_current_user)
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         usuario = payload.get("sub")
