@@ -444,10 +444,7 @@ def obtener_solicitud_por_id(solicitud_id: int, db: Session = Depends(get_db)):
     solicitud_dict["archivo_url"] = archivo_url
 
     return SolicitudResponse(**solicitud_dict)
-    
-from fastapi import Depends
-from ..auth import get_current_user
-from app.models import Usuario  # modelo del usuario autenticado
+
 
 @router.delete("/{solicitud_id}")
 def eliminar_solicitud(
