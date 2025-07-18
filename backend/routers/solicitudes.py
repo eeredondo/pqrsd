@@ -446,7 +446,7 @@ def obtener_solicitud_por_id(solicitud_id: int, db: Session = Depends(get_db)):
     return SolicitudResponse(**solicitud_dict)
     
 from fastapi import Depends
-from app.auth import get_current_user  # importa tu función que lee el token
+from ..auth import get_current_user
 from app.models import Usuario  # modelo del usuario autenticado
 
 @router.delete("/{solicitud_id}")
