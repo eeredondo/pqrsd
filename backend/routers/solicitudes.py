@@ -444,16 +444,18 @@ def obtener_solicitud_por_id(solicitud_id: int, db: Session = Depends(get_db)):
     solicitud_dict["archivo_url"] = archivo_url
 
     return SolicitudResponse(**solicitud_dict)
+    
+from fastapi import Depends
+from app.auth import get_current_user  # importa tu función que lee el token
+from app.models import Usuario  # modelo del usuario autenticado
+
 @router.delete("/{solicitud_id}")
 def eliminar_solicitud(
     solicitud_id: int,
     db: Session = Depends(get_db),
-    request: Request = None
+    usuario_actual: Usuario = Depends(get_current_user)
 ):
-    usuario_actual = request.headers.get("usuario")
-    usuario_obj = db.query(Usuario).filter(Usuario.usuario == usuario_actual).first()
-
-    if not usuario_obj or usuario_obj.rol != "Administrador":
+    if usuario_actual.rol != "Administrador":
         raise HTTPException(status_code=403, detail="No autorizado")
 
     solicitud = db.query(Solicitud).filter(Solicitud.id == solicitud_id).first()
@@ -463,8 +465,6 @@ def eliminar_solicitud(
     db.delete(solicitud)
     db.commit()
     return {"mensaje": "Solicitud eliminada correctamente"}
-class ReasignarInput(BaseModel):
-    nuevo_responsable_id: int
 
 @router.put("/{solicitud_id}/reasignar")
 def reasignar_solicitud(
