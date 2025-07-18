@@ -445,4 +445,25 @@ def obtener_solicitud_por_id(solicitud_id: int, db: Session = Depends(get_db)):
 
     return SolicitudResponse(**solicitud_dict)
 
+@router.delete("/{solicitud_id}", status_code=204)
+def eliminar_solicitud(solicitud_id: int, db: Session = Depends(get_db)):
+    solicitud = db.query(Solicitud).get(solicitud_id)
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    db.delete(solicitud)
+    db.commit()
+    return {"mensaje": "Solicitud eliminada"}
 
+@router.put("/reasignar/{solicitud_id}", response_model=SolicitudResponse)
+def reasignar_responsable(
+    solicitud_id: int,
+    nuevo_responsable_id: int = Body(...),
+    db: Session = Depends(get_db)
+):
+    solicitud = db.query(Solicitud).get(solicitud_id)
+    if not solicitud:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada")
+    solicitud.responsable_id = nuevo_responsable_id
+    db.commit()
+    db.refresh(solicitud)
+    return solicitud
