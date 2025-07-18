@@ -454,16 +454,21 @@ def eliminar_solicitud(solicitud_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Solicitud eliminada"}
 
-@router.put("/reasignar/{solicitud_id}", response_model=SolicitudResponse)
-def reasignar_responsable(
+@router.put("/solicitudes/{solicitud_id}/reasignar")
+def reasignar_encargado(
     solicitud_id: int,
-    nuevo_responsable_id: int = Body(...),
-    db: Session = Depends(get_db)
+    datos: ReasignarEncargadoRequest,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user)
 ):
-    solicitud = db.query(Solicitud).get(solicitud_id)
+    solicitud = db.query(Solicitud).filter(Solicitud.id == solicitud_id).first()
     if not solicitud:
         raise HTTPException(status_code=404, detail="Solicitud no encontrada")
-    solicitud.responsable_id = nuevo_responsable_id
+
+    nuevo = db.query(Usuario).filter(Usuario.id == datos.nuevo_encargado).first()
+    if not nuevo:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    solicitud.encargado_id = nuevo.id
     db.commit()
-    db.refresh(solicitud)
-    return solicitud
+    return {"mensaje": "Encargado reasignado correctamente"}
