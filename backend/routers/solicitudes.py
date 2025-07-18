@@ -15,6 +15,7 @@ from utils.websocket_manager import sio
 from utils.supabase_client import supabase
 from auth import obtener_usuario_actual
 from schemas import ReasignarEncargadoRequest
+import tempfile
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 
