@@ -454,7 +454,7 @@ def eliminar_solicitud(solicitud_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"mensaje": "Solicitud eliminada"}
 
-@router.put("/solicitudes/{solicitud_id}/reasignar")
+@router.put("/{solicitud_id}/reasignar")
 def reasignar_encargado(
     solicitud_id: int,
     datos: ReasignarEncargadoRequest,
