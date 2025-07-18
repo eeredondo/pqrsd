@@ -13,6 +13,7 @@ import shutil, os
 from docx2pdf import convert
 from utils.websocket_manager import sio
 from utils.supabase_client import supabase
+from auth import obtener_usuario_actual as get_current_user
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 
