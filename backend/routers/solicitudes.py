@@ -14,6 +14,7 @@ from docx2pdf import convert
 from utils.websocket_manager import sio
 from utils.supabase_client import supabase
 from auth import get_current_user
+from schemas import ReasignarEncargadoRequest
 
 router = APIRouter(prefix="/solicitudes", tags=["solicitudes"])
 
