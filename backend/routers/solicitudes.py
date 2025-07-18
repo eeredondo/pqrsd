@@ -31,6 +31,20 @@ class Revision(BaseModel):
     aprobado: bool
     comentario: str | None = None
 
+def generar_radicado_unico(db: Session) -> str:
+    ano = datetime.utcnow().year
+    count = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count()
+    nuevo_radicado = f"RAD-{ano}-{str(count + 1).zfill(5)}"
+
+    # Asegura que no exista ya
+    while db.query(Solicitud).filter(Solicitud.radicado == nuevo_radicado).first():
+        count += 1
+        nuevo_radicado = f"RAD-{ano}-{str(count + 1).zfill(5)}"
+
+    return nuevo_radicado
+
+
+# ✅ ENDPOINT PARA RADICAR PQRSD
 @router.post("/", response_model=SolicitudResponse)
 async def crear_solicitud(
     nombre: str = Form(...),
@@ -45,28 +59,25 @@ async def crear_solicitud(
     db: Session = Depends(get_db)
 ):
     from utils.supabase_client import supabase
-    from fastapi_mail import FastMail, MessageSchema, MessageType
-    import tempfile, os
 
-    # ✅ Generar nombre de archivo sin subcarpeta "uploads/"
+    # ✅ Generar nombre único para el archivo
     nombre_archivo = f"{datetime.utcnow().timestamp()}_{archivo.filename}"
     contenido = await archivo.read()
 
-    # ✅ Subir archivo directamente al bucket sin prefijo
+    # ✅ Subir archivo a Supabase
     supabase.storage.from_("archivos").upload(
         path=nombre_archivo,
         file=contenido,
         file_options={"content-type": "application/pdf"},
     )
 
-    # ✅ Guardar el nombre exacto en la base de datos
+    # ✅ Guardar nombre sin subcarpeta
     file_location = nombre_archivo
 
-    # ✅ Crear radicado único
-    ano = datetime.utcnow().year
-    conteo = db.query(Solicitud).filter(Solicitud.radicado.like(f"RAD-{ano}-%")).count() + 1
-    radicado = f"RAD-{ano}-{str(conteo).zfill(5)}"
+    # ✅ Generar radicado único
+    radicado = generar_radicado_unico(db)
 
+    # ✅ Crear solicitud
     nueva_solicitud = Solicitud(
         nombre=nombre,
         apellido=apellido,
@@ -84,7 +95,7 @@ async def crear_solicitud(
     db.commit()
     db.refresh(nueva_solicitud)
 
-    # ✅ Crear trazabilidad inicial
+    # ✅ Crear trazabilidad
     evento = Trazabilidad(
         solicitud_id=nueva_solicitud.id,
         evento="Radicación",
@@ -95,7 +106,7 @@ async def crear_solicitud(
     db.add(evento)
     db.commit()
 
-    # ✅ Descargar el archivo para adjuntarlo en el correo
+    # ✅ Descargar PDF para adjuntar en correo
     contenido_pdf = supabase.storage.from_("archivos").download(file_location)
 
     ruta_temporal = os.path.join(tempfile.gettempdir(), "comprobante.pdf")
@@ -125,7 +136,7 @@ Equipo PQRSD
     )
     await fm.send_message(mensaje_peticionario)
 
-    # ✅ Notificar a los asignadores
+    # ✅ Notificar asignadores
     asignadores = db.query(Usuario).filter(Usuario.rol == "asignador").all()
     correos_asignadores = [a.correo for a in asignadores]
 
@@ -148,20 +159,19 @@ Se adjunta el documento enviado por el ciudadano.
         )
         await fm.send_message(mensaje_asignadores)
 
-    # ✅ Notificar en tiempo real al frontend
+    # ✅ Emitir evento a frontend (socket)
     await sio.emit("nueva_solicitud", {
         "radicado": radicado,
         "nombre": nombre,
         "apellido": apellido
     })
 
-    # ✅ Eliminar archivo temporal
+    # ✅ Limpiar archivo temporal
     os.remove(ruta_temporal)
 
-    # ✅ Construir URL pública del PDF
+    # ✅ URL pública del PDF
     supabase_url = "https://smdxstmmjkpvvksamute.supabase.co"
-    bucket = "archivos"
-    archivo_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{file_location}"
+    archivo_url = f"{supabase_url}/storage/v1/object/public/archivos/{file_location}"
 
     return {
         "id": nueva_solicitud.id,
